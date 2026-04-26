@@ -417,7 +417,7 @@ def move(board, player, remain_time, mo=None):
 
     # Chọn nước đi được khảo sát nhiều nhất (Robust Child)
     best_child = max(root.children, key=lambda c: c.visits)
-    print(f"[MCTS] Vòng lặp: {iterations} | Đã chọn: {best_child.move}")
+    #print(f"[MCTS] Vòng lặp: {iterations} | Đã chọn: {best_child.move}")
     return best_child.move
 
 def main2(first = 'X'):

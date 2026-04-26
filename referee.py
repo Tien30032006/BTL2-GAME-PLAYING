@@ -3,6 +3,7 @@ from a2_260408 import init_board, act_moves, get_valid_moves, count_X, npc_move
 import my_agent
 import test_agent
 import MCTS
+
 # --- CẤU HÌNH TEST ---
 TOTAL_MATCHES = 10
 TIME_LIMIT_TOTAL = 99.0
@@ -41,13 +42,27 @@ def run_single_match(agent_1_func, agent_2_func):
         times[current_player] -= time_taken
         time_used[current_player] += time_taken
         
+        # =========================================================
+        # KIỂM TRA TÍNH HỢP LỆ VÀ LUẬT MỞ (BẮT BUỘC GÁNH)
+        # =========================================================
+        # 1. Kiểm tra luật bắt buộc gánh
+        if mo_list and move not in mo_list:
+            reason = f"Vi phạm luật Mở (Đi {move}, bắt buộc {mo_list})"
+            return -current_player, turn_count, time_used[1], time_used[-1], reason
+            
+        # 2. Kiểm tra nước đi có hợp lệ cơ bản không (đề phòng đi bậy)
+        if move not in valid_moves:
+            reason = f"Nước đi sai luật (Không nằm trong valid_moves)"
+            return -current_player, turn_count, time_used[1], time_used[-1], reason
+        # =========================================================
+        
         # Xử thua do vi phạm thời gian
         if time_taken > TIME_LIMIT_PER_MOVE:
             return -current_player, turn_count, time_used[1], time_used[-1], f"Timeout ({time_taken:.2f}s/move)"
         if times[current_player] <= 0:
             return -current_player, turn_count, time_used[1], time_used[-1], "Hết tổng 99s"
             
-        # Cập nhật bàn cờ
+        # Cập nhật bàn cờ và lấy danh sách "Mở" cho đối thủ ở lượt kế tiếp
         mo_list = act_moves(move, current_player, board)
         turn_count += 1
         current_player *= -1
@@ -61,9 +76,9 @@ def run_single_match(agent_1_func, agent_2_func):
 
 if __name__ == "__main__":
     print(f"BẮT ĐẦU CHẠY THỬ NGHIỆM {TOTAL_MATCHES} TRẬN")
-    print("-" * 80)
+    print("-" * 100)
     print(f"{'Trận':<6} | {'Người Thắng':<15} | {'Lượt':<6} | {'Thời gian AI (X)':<20} | {'Lý do'}")
-    print("-" * 80)
+    print("-" * 100)
     
     stats = {
         "AI_win": 0,
@@ -94,9 +109,9 @@ if __name__ == "__main__":
         print(f"#{i:<5} | {win_str:<15} | {turns:<6} | {ai_time:<15.3f} giây | {reason}")
 
     # --- TỔNG KẾT ---
-    print("=" * 80)
+    print("=" * 100)
     print("BÁO CÁO THỐNG KÊ SAU", TOTAL_MATCHES, "TRẬN")
-    print("=" * 80)
+    print("=" * 100)
     
     ai_win_rate = (stats["AI_win"] / TOTAL_MATCHES) * 100
     avg_turns = stats["Total_turns"] / TOTAL_MATCHES
@@ -105,4 +120,4 @@ if __name__ == "__main__":
     print(f"* Tỷ lệ thắng của My AI : {ai_win_rate:.1f}% ({stats['AI_win']} Thắng - {stats['Draw']} Hòa - {stats['Random_win']} Thua)")
     print(f"* Trung bình số nước đi  : {avg_turns:.1f} nước / trận")
     print(f"* Trung bình tiêu hao thời gian (My AI) : {avg_time_per_match:.2f} giây / trận")
-    print("=" * 80)
+    print("=" * 100)
