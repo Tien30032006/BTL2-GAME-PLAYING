@@ -92,7 +92,6 @@ if __name__ == "__main__":
         # AI của bạn cầm quân X (1), Random Agent cầm quân O (-1)
         winner, turns, ai_time, random_time, reason = run_single_match(my_agent.move, MCTS.move)
         
-        # Lưu thống kê
         stats["Total_turns"] += turns
         stats["Total_AI_time"] += ai_time
         

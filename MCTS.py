@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Apr  8 18:59:30 2021
-
-@author: AZ
-"""
 import random
 import time
 import math
