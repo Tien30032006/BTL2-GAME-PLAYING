@@ -499,7 +499,7 @@ def test():
 
 def main3(first='X'):
     print("=====================================================")
-    print("MCTS AI (Quân X) vs MY AI (Quân O) ")
+    print("MCTS AI (Quân X) vs MY AGENT (Quân O) ")
     print("=====================================================")
     
     board = init_board()
@@ -526,7 +526,7 @@ def main3(first='X'):
                 print(f"Hết 100 lượt! Số quân X ({X_pieces}) > Số quân O ({16 - X_pieces}). MCTS AI (X) THẮNG!")
                 return 1
             elif X_pieces < 8:
-                print(f"Hết 100 lượt! Số quân X ({X_pieces}) < Số quân O ({16 - X_pieces}). MY AI (O) THẮNG!")
+                print(f"Hết 100 lượt! Số quân X ({X_pieces}) < Số quân O ({16 - X_pieces}). MY AGENT (O) THẮNG!")
                 return -1
             else:
                 print("Hết 100 lượt! Số quân bằng nhau. HÒA!")
@@ -542,12 +542,12 @@ def main3(first='X'):
             print(f"⏳ [Quân X - MCTS AI] Thời gian suy nghĩ: {e:.4f}s | Quỹ thời gian còn: {times[1]:.2f}s")
             print(f"-> MCTS chọn nước đi: {chose_move}")
         else:
-            # My AI (Cầm quân O - Gọi hàm từ my_agent.py với đúng 3 tham số theo luật)
+            # MY AGENT (Cầm quân O - Gọi hàm từ my_agent.py với đúng 3 tham số theo luật)
             chose_move = my_agent.move(board, player, times[-1])
             e = time.time() - start_time
             times[-1] -= e
-            print(f"⏳ [Quân O - My AI] Thời gian suy nghĩ: {e:.4f}s | Quỹ thời gian còn: {times[-1]:.2f}s")
-            print(f"-> My AI chọn nước đi: {chose_move}")
+            print(f"⏳ [Quân O - MY AGENT] Thời gian suy nghĩ: {e:.4f}s | Quỹ thời gian còn: {times[-1]:.2f}s")
+            print(f"-> MY AGENT chọn nước đi: {chose_move}")
 
         # Kiểm tra thời gian
         if e > 3.2:
@@ -557,10 +557,10 @@ def main3(first='X'):
         # Kiểm tra còn nước đi hay không
         if chose_move == None:
             if player == 1:
-                print("MCTS (X) không chọn được nước đi. MY AI (O) THẮNG!")
+                print("MCTS (X) không chọn được nước đi. MY AGENT (O) THẮNG!")
                 return -1
             else:
-                print("My AI (O) không chọn được nước đi. MCTS (X) THẮNG!")
+                print("MY AGENT (O) không chọn được nước đi. MCTS (X) THẮNG!")
                 return 1
 
         # Kiểm tra tính hợp lệ của nước đi
@@ -589,7 +589,7 @@ def main3(first='X'):
             return 1
         elif x_count == 0:
             print_board(board)
-            print("MY AI (O) ĐÃ QUÉT SẠCH QUÂN X! CHIẾN THẮNG.")
+            print("MY AGENT (O) ĐÃ QUÉT SẠCH QUÂN X! CHIẾN THẮNG.")
             return -1
 
     return 0

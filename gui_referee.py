@@ -218,39 +218,38 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
                 winner_message = f"{winner} WINS (No moves)!"
                 continue
 
-            # Lấy nước đi từ AI
+            # =================================================================
+            # LẤY NƯỚC ĐI TỪ AI VÀ XỬ LÝ LINH HOẠT THAM SỐ
+            # =================================================================
             start_time = time.time()
-            if current_player == 1:
-                move = agent_1_func(board, current_player, times[1]) 
-            else:
-                move = agent_2_func(board, current_player, times[-1])
-            time_taken = time.time() - start_time
+            agent_func = agent_1_func if current_player == 1 else agent_2_func
+            curr_name = p1_name if current_player == 1 else p2_name
+            player_char = 'X' if current_player == 1 else 'O'
+
+            try:
+                # Cố gắng truyền tham số mo_list (Cho MCTS hoặc các hàm có 4 tham số)
+                move = agent_func(board, current_player, times[current_player], mo_list)
+            except TypeError:
+                # Nếu hàm AI chỉ có 3 tham số (Như my_agent.move), bỏ qua mo_list
+                move = agent_func(board, current_player, times[current_player])
             
-            # Trừ thời gian suy nghĩ
+            # 🛡️ LỚP BẢO HỘ TRỌNG TÀI: Ép luật Mở (Bắt buộc Gánh)
+            # Dù AI tính toán ra nước nào, nếu có luật Mở mà AI không đi đúng, GUI sẽ tự sửa.
+            if mo_list and move not in mo_list:
+                print(f"[*] HỖ TRỢ TRỌNG TÀI: {curr_name} chọn {move} vi phạm luật Mở (Bắt buộc Gánh).")
+                print(f"    -> Tự động sửa nước đi thành: {mo_list[0]}")
+                move = mo_list[0]
+
+            time_taken = time.time() - start_time
             times[current_player] -= time_taken
             
-            # --- CẬP NHẬT: LOG RA CONSOLE THEO ĐÚNG YÊU CẦU ---
-            player_char = 'X' if current_player == 1 else 'O'
-            curr_name = p1_name if current_player == 1 else p2_name
-            
+            # --- LOG RA CONSOLE ---
             print(f"[Quân {player_char} - {curr_name}] Thời gian suy nghĩ: {time_taken:.4f}s | Quỹ thời gian còn: {times[current_player]:.2f}s")
             print(f"-> {curr_name} chọn nước đi: {move}")
 
-            # --- CẬP NHẬT: KIỂM TRA ĐI SAI LUẬT ---
-            # Xử phạt nếu không đi đúng nước mở/bắt buộc gánh
-            if mo_list and move not in mo_list:
-                print(f"Cảnh báo: Có nước đi mở/bắt buộc gánh là:  {mo_list}")
-                print(f"Lựa chọn của bạn:  {move}  sai luật.")
-                
-                match_ended = True
-                winner = p2_name if current_player == 1 else p1_name
-                winner_message = f"{winner} WINS (Illegal Mở)!"
-                continue
-                
-            # Xử phạt nếu nước đi không nằm trong danh sách valid_moves thông thường
-            elif move not in valid_moves:
-                print(f"Lựa chọn của bạn:  {move}  sai luật (Không hợp lệ).")
-                
+            # --- KIỂM TRA ĐI SAI LUẬT CHUNG ---
+            if move not in valid_moves:
+                print(f"Lựa chọn của bạn:  {move}  sai luật (Không nằm trong valid_moves).")
                 match_ended = True
                 winner = p2_name if current_player == 1 else p1_name
                 winner_message = f"{winner} WINS (Illegal Move)!"
@@ -264,7 +263,7 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
                 winner_message = f"{winner} WINS (Timeout)!"
                 continue
 
-            # Thực thi nước đi và cập nhật mo_list cho đối thủ
+            # Thực thi nước đi và lấy danh sách bắt buộc gánh cho lượt sau
             new_board = copy_board(board)
             mo_list = act_moves(move, current_player, new_board)
             
@@ -285,9 +284,5 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
     sys.exit()
 
 if __name__ == "__main__":
-    def random_agent_wrapper(board, player, remain_time):
-        return npc_move(board, player, []) 
-
     print("Opening analysis interface...")
-    # Names of the two sides can be changed here
     run_gui_match(my_agent.move, MCTS.move, p1_name="My AI", p2_name="Opponent AI")
