@@ -398,15 +398,57 @@ def _order_moves(board, player, moves, tt_hint, ply_killers):
     return moves
 
 # =================================================================
-# PHẦN 5: MAIN AGENT ENGINE (Giao tiếp đúng 3 tham số)
+# PHẦN 5: MAIN AGENT ENGINE (Giao tiếp đúng 3 tham số - ĐÃ VÁ LỖI)
 # =================================================================
 
 def move(board, player, remain_time):
     start_time = time.time()
 
+    # --- LỚP KHIÊN BẢO VỆ MỚI: TRACKING NƯỚC ĐI CỦA ĐỐI THỦ ---
+    if not hasattr(move, "last_board"):
+        move.last_board = {1: None, -1: None}
+        
+    mo_list = []
+    # Dịch ngược bàn cờ cũ để tìm nước đi mà đối thủ vừa thực hiện
+    if move.last_board[player] is not None:
+        start_op = []
+        end_op = []
+        our_changed = False
+        for i in range(5):
+            for j in range(5):
+                # Phát hiện quân ta bị ăn (bốc hơi hoặc đổi màu)
+                if move.last_board[player][i][j] == player and board[i][j] != player:
+                    our_changed = True
+                # Nơi đối thủ rời đi
+                elif move.last_board[player][i][j] == -player and board[i][j] == 0:
+                    start_op.append((i, j))
+                # Nơi đối thủ vừa đến
+                elif move.last_board[player][i][j] == 0 and board[i][j] == -player:
+                    end_op.append((i, j))
+                    
+        # Nếu đối thủ chỉ đi đúng 1 quân và KHÔNG HỀ có quá trình bắt/gánh quân ta xảy ra
+        if not our_changed and len(start_op) == 1 and len(end_op) == 1:
+            sim_board = copy_board(move.last_board[player])
+            mo_list = act_moves((start_op[0], end_op[0]), -player, sim_board)
+
+    # Nếu mo_list không rỗng, chúng ta BẮT BUỘC phải đi một trong những nước này
     valid_moves = get_valid_moves(board, player)
-    if not valid_moves: return None
-    if len(valid_moves) == 1: return valid_moves[0]
+    if mo_list:
+        forced = [m for m in valid_moves if m in mo_list]
+        if forced: 
+            valid_moves = forced 
+
+    if not valid_moves: 
+        return None
+        
+    # Thoát và chốt sổ ngay nếu chỉ có 1 lựa chọn khả thi
+    if len(valid_moves) == 1:
+        best_move = valid_moves[0]
+        # Cập nhật state cuối để lượt sau còn dùng
+        sim_our = copy_board(board)
+        act_moves(best_move, player, sim_our)
+        move.last_board[player] = sim_our
+        return best_move
 
     # --- LỚP KHIÊN 1: GLOBAL HISTORY ---
     if not hasattr(move, "global_history"):
@@ -435,7 +477,7 @@ def move(board, player, remain_time):
     def _hash(b, pl):
         return (tuple(tuple(row) for row in b), pl)
 
-    def minimax(b, depth, alpha, beta, is_max, curr_pl, mo_list, ply=0):
+    def minimax(b, depth, alpha, beta, is_max, curr_pl, current_mo_list, ply=0):
         node_counter[0] += 1
         if node_counter[0] & (NODE_CHECK - 1) == 0:
             if time.time() - start_time > time_limit:
@@ -463,9 +505,9 @@ def move(board, player, remain_time):
         # Sinh nước đi
         moves = get_valid_moves(b, curr_pl)
         # Bắt buộc gánh nếu nằm trong thế cờ mở
-        if mo_list:
-            forced = [m for m in moves if m in mo_list]
-            if forced: moves = forced
+        if current_mo_list:
+            forced_moves = [m for m in moves if m in current_mo_list]
+            if forced_moves: moves = forced_moves
         if not moves:
             return evaluate(b), None
 
@@ -521,12 +563,17 @@ def move(board, player, remain_time):
     try:
         for d in range(1, MAX_DEPTH + 1):
             node_counter[0] = 0
-            # Root truyền mảng trống vì hàm move không nhận tham số mo
-            _, best = minimax(board, d, -INF, INF, True, player, [])
+            # TRUYỀN mo_list VÀO ROOT Ở ĐÂY ĐỂ CÂY SEARCH HIỂU BẢN THÂN PHẢI BẮT BUỘC GÁNH
+            _, best = minimax(board, d, -INF, INF, True, player, mo_list)
             if best is not None:
                 global_best = best
     except TimeoutException:
         pass
+
+    # Lưu lại trạng thái của bàn cờ sau khi AI đã chọn xong nước
+    sim_our = copy_board(board)
+    act_moves(global_best, player, sim_our)
+    move.last_board[player] = sim_our
 
     return global_best
 
