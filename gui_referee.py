@@ -4,6 +4,7 @@ import time
 import sys
 
 # Import environment and AI
+import MCTS
 from a2_260408 import init_board, act_moves, get_valid_moves, count_X, npc_move
 import my_agent
 import test_agent
@@ -264,4 +265,4 @@ if __name__ == "__main__":
 
     print("Opening analysis interface...")
     # Names of the two sides can be changed here
-    run_gui_match(my_agent.move, test_agent.move, p1_name="My AI", p2_name="Opponent AI")
+    run_gui_match(my_agent.move, MCTS.move, p1_name="My AI", p2_name="Opponent AI")

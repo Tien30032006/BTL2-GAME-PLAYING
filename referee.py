@@ -2,9 +2,9 @@ import time
 from a2_260408 import init_board, act_moves, get_valid_moves, count_X, npc_move
 import my_agent
 import test_agent
-
+import MCTS
 # --- CẤU HÌNH TEST ---
-TOTAL_MATCHES = 50
+TOTAL_MATCHES = 10
 TIME_LIMIT_TOTAL = 99.0
 TIME_LIMIT_PER_MOVE = 3.0
 
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     
     for i in range(1, TOTAL_MATCHES + 1):
         # AI của bạn cầm quân X (1), Random Agent cầm quân O (-1)
-        winner, turns, ai_time, random_time, reason = run_single_match(my_agent.move, random_agent_wrapper)
+        winner, turns, ai_time, random_time, reason = run_single_match(my_agent.move, MCTS.move)
         
         # Lưu thống kê
         stats["Total_turns"] += turns
