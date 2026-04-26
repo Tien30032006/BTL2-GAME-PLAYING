@@ -66,7 +66,6 @@ def draw_board(screen, board, last_move=None):
             elif board[i][j] == -1:
                 pygame.draw.circle(screen, P2_COLOR, (x, y), 25)
 
-# CẬP NHẬT: Thêm tham số match_ended và winner_message
 def draw_ui(screen, font, p1_name, p2_name, time1, time2, p1_pieces, p2_pieces, turn, is_paused, match_ended=False, winner_message=""):
     # Draw right panel background
     pygame.draw.rect(screen, UI_BG, (BOARD_SIZE, 0, UI_WIDTH, HEIGHT))
@@ -92,7 +91,7 @@ def draw_ui(screen, font, p1_name, p2_name, time1, time2, p1_pieces, p2_pieces, 
     screen.blit(font.render(f"Time: {time2:.2f}s", True, TEXT_COLOR), (BOARD_SIZE + 30, 260))
     screen.blit(font.render(f"Pieces: {p2_pieces}", True, TEXT_COLOR), (BOARD_SIZE + 30, 290))
 
-    # CẬP NHẬT: Xử lý hiển thị trạng thái và kết quả trận đấu
+    # Trạng thái trận đấu
     if match_ended:
         status_text = "MATCH ENDED!"
         status_color = (255, 50, 50)
@@ -100,12 +99,11 @@ def draw_ui(screen, font, p1_name, p2_name, time1, time2, p1_pieces, p2_pieces, 
         status_text = "PAUSED (REPLAY)" if is_paused else "MATCH IN PROGRESS..."
         status_color = (255, 100, 100) if is_paused else (100, 255, 100)
     
-    # Đẩy text status lên cao một chút (350 thay vì 360) để nhường chỗ cho winner text
     screen.blit(font.render(status_text, True, status_color), (BOARD_SIZE + 20, 345))
 
-    # HIỂN THỊ NGƯỜI CHIẾN THẮNG
+    # Hiển thị người chiến thắng
     if match_ended and winner_message:
-        win_surf = font.render(winner_message, True, (255, 215, 0)) # Màu vàng Gold
+        win_surf = font.render(winner_message, True, (255, 215, 0)) 
         screen.blit(win_surf, (BOARD_SIZE + 20, 380))
 
 def draw_buttons(screen, font, mouse_pos):
@@ -120,7 +118,6 @@ def draw_buttons(screen, font, mouse_pos):
         color = BTN_HOVER if rect.collidepoint(mouse_pos) else BTN_COLOR
         pygame.draw.rect(screen, color, rect, border_radius=5)
         text_surf = font.render(text, True, TEXT_COLOR)
-        # Center text in the button
         text_rect = text_surf.get_rect(center=rect.center)
         screen.blit(text_surf, text_rect)
         
@@ -149,7 +146,7 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
     view_index = 0
     is_paused = False
     match_ended = False
-    winner_message = "" # NEW: Biến lưu trữ thông điệp chiến thắng
+    winner_message = "" 
 
     running = True
     while running:
@@ -157,11 +154,10 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
         board_state = history[view_index]
         board = board_state["board"]
         
-        # Draw everything to the screen
+        # Draw everything
         draw_board(screen, board, board_state["move"])
         x_count, o_count = count_X(board), 16 - count_X(board)
         
-        # CẬP NHẬT: Truyền thêm match_ended và winner_message
         draw_ui(screen, font, p1_name, p2_name, board_state["time1"], board_state["time2"], 
                 x_count, o_count, board_state["turn"], is_paused, match_ended, winner_message)
         
@@ -169,13 +165,13 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
         
         pygame.display.flip()
 
-        # EVENT HANDLING (Button clicks)
+        # EVENT HANDLING
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if btn_prev.collidepoint(event.pos):
-                    is_paused = True # Auto-pause when rewinding
+                    is_paused = True 
                     view_index = max(0, view_index - 1)
                 elif btn_next.collidepoint(event.pos):
                     is_paused = True
@@ -191,7 +187,7 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
             turn_count = len(history)
             x_count, o_count = count_X(board), 16 - count_X(board)
 
-            # CẬP NHẬT: Điều kiện 1 - Bị ăn hết quân
+            # Điều kiện 1 - Bị ăn hết quân
             if x_count == 0:
                 match_ended = True
                 winner_message = f"WINNER: {p2_name}!"
@@ -201,7 +197,7 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
                 winner_message = f"WINNER: {p1_name}!"
                 continue
 
-            # CẬP NHẬT: Điều kiện 2 - Vượt quá 100 lượt
+            # Điều kiện 2 - Vượt quá 100 lượt
             if turn_count > 100:
                 match_ended = True
                 if x_count > o_count:
@@ -212,15 +208,17 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
                     winner_message = "DRAW!"
                 continue
 
-            # CẬP NHẬT: Điều kiện 3 - Hết nước đi hợp lệ
+            # Lấy danh sách nước đi hợp lệ để kiểm tra
             valid_moves = get_valid_moves(board, current_player)
+            
+            # Điều kiện 3 - Hết nước đi hợp lệ
             if not valid_moves:
                 match_ended = True
                 winner = p2_name if current_player == 1 else p1_name
                 winner_message = f"{winner} WINS (No moves)!"
                 continue
 
-            # Call the thinking function
+            # Lấy nước đi từ AI
             start_time = time.time()
             if current_player == 1:
                 move = agent_1_func(board, current_player, times[1]) 
@@ -228,10 +226,37 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
                 move = agent_2_func(board, current_player, times[-1])
             time_taken = time.time() - start_time
             
-            # Deduct time and check for timeout
+            # Trừ thời gian suy nghĩ
             times[current_player] -= time_taken
             
-            # CẬP NHẬT: Điều kiện 4 - Hết giờ / Quá thời gian quy định cho 1 lượt
+            # --- CẬP NHẬT: LOG RA CONSOLE THEO ĐÚNG YÊU CẦU ---
+            player_char = 'X' if current_player == 1 else 'O'
+            curr_name = p1_name if current_player == 1 else p2_name
+            
+            print(f"[Quân {player_char} - {curr_name}] Thời gian suy nghĩ: {time_taken:.4f}s | Quỹ thời gian còn: {times[current_player]:.2f}s")
+            print(f"-> {curr_name} chọn nước đi: {move}")
+
+            # --- CẬP NHẬT: KIỂM TRA ĐI SAI LUẬT ---
+            # Xử phạt nếu không đi đúng nước mở/bắt buộc gánh
+            if mo_list and move not in mo_list:
+                print(f"Cảnh báo: Có nước đi mở/bắt buộc gánh là:  {mo_list}")
+                print(f"Lựa chọn của bạn:  {move}  sai luật.")
+                
+                match_ended = True
+                winner = p2_name if current_player == 1 else p1_name
+                winner_message = f"{winner} WINS (Illegal Mở)!"
+                continue
+                
+            # Xử phạt nếu nước đi không nằm trong danh sách valid_moves thông thường
+            elif move not in valid_moves:
+                print(f"Lựa chọn của bạn:  {move}  sai luật (Không hợp lệ).")
+                
+                match_ended = True
+                winner = p2_name if current_player == 1 else p1_name
+                winner_message = f"{winner} WINS (Illegal Move)!"
+                continue
+
+            # Điều kiện 4 - Hết giờ / Quá thời gian quy định cho 1 lượt
             if times[current_player] <= 0 or time_taken > 3.2:
                 print(f"Player {current_player} timed out or ran out of time!")
                 match_ended = True
@@ -239,7 +264,7 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
                 winner_message = f"{winner} WINS (Timeout)!"
                 continue
 
-            # Execute and save history
+            # Thực thi nước đi và cập nhật mo_list cho đối thủ
             new_board = copy_board(board)
             mo_list = act_moves(move, current_player, new_board)
             

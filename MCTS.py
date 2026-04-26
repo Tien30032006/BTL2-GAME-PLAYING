@@ -7,6 +7,7 @@ Created on Thu Apr  8 18:59:30 2021
 import random
 import time
 import math
+import my_agent
 
 def init_board():
     board = [[+1, +1, +1, +1, +1],
@@ -501,7 +502,105 @@ def test():
     print_board(b)
     print(ret)
 
+def main3(first='X'):
+    print("=====================================================")
+    print("MCTS AI (Quân X) vs MY AI (Quân O) ")
+    print("=====================================================")
+    
+    board = init_board()
+    count = 0
+    limit = 100
+    if first == 'X':
+        player = 1
+    else:
+        player = -1
+        
+    mo = []
+    # Khởi tạo quỹ thời gian 99 giây cho mỗi bên
+    times = {1: 99.0, -1: 99.0}
 
+    while(True):
+        count = count + 1
+        print(f"\n[{count}/100] LƯỢT CỦA QUÂN {'X' if player == 1 else 'O'}")
+        print_board(board)
+        
+        # Kiểm tra giới hạn lượt đi
+        if(count > limit):
+            X_pieces = count_X(board)
+            if X_pieces > 8:
+                print(f"Hết 100 lượt! Số quân X ({X_pieces}) > Số quân O ({16 - X_pieces}). MCTS AI (X) THẮNG!")
+                return 1
+            elif X_pieces < 8:
+                print(f"Hết 100 lượt! Số quân X ({X_pieces}) < Số quân O ({16 - X_pieces}). MY AI (O) THẮNG!")
+                return -1
+            else:
+                print("Hết 100 lượt! Số quân bằng nhau. HÒA!")
+                return 0
+
+        # Lựa chọn nước đi tùy thuộc vào người chơi
+        start_time = time.time()
+        if player == 1:
+            # MCTS AI (Cầm quân X - Gọi hàm move cục bộ của file này với 4 tham số)
+            chose_move = move(board, player, times[1], mo)
+            e = time.time() - start_time
+            times[1] -= e
+            print(f"⏳ [Quân X - MCTS AI] Thời gian suy nghĩ: {e:.4f}s | Quỹ thời gian còn: {times[1]:.2f}s")
+            print(f"-> MCTS chọn nước đi: {chose_move}")
+        else:
+            # My AI (Cầm quân O - Gọi hàm từ my_agent.py với đúng 3 tham số theo luật)
+            chose_move = my_agent.move(board, player, times[-1])
+            e = time.time() - start_time
+            times[-1] -= e
+            print(f"⏳ [Quân O - My AI] Thời gian suy nghĩ: {e:.4f}s | Quỹ thời gian còn: {times[-1]:.2f}s")
+            print(f"-> My AI chọn nước đi: {chose_move}")
+
+        # Kiểm tra thời gian
+        if e > 3.2:
+            print(f"Thời gian xử lý ({e:.2f}s) vượt quá 3.2 giây. QUÂN {'X' if player == 1 else 'O'} BỊ XỬ THUA!")
+            return -player
+
+        # Kiểm tra còn nước đi hay không
+        if chose_move == None:
+            if player == 1:
+                print("MCTS (X) không chọn được nước đi. MY AI (O) THẮNG!")
+                return -1
+            else:
+                print("My AI (O) không chọn được nước đi. MCTS (X) THẮNG!")
+                return 1
+
+        # Kiểm tra tính hợp lệ của nước đi
+        if player == 1 or player == -1:
+            if len(mo) > 0:
+                if chose_move not in mo:
+                    print("Cảnh báo: Có nước đi mở/bắt buộc gánh là: ", mo)
+                    print("Lựa chọn của bạn: ", chose_move, " sai luật.")
+                    return -player
+            
+            valid_moves = get_valid_moves(board, player)
+            if chose_move not in valid_moves:
+                print("Các nước đi hợp lệ: ", valid_moves)
+                print("Lựa chọn của bạn: ", chose_move, " là nước đi không hợp lệ.")
+                return -player
+
+        # Cập nhật bàn cờ và đổi lượt
+        mo = act_moves(chose_move, player, board)
+        player = player * -1
+        
+        # Kiểm tra điều kiện thắng cờ (ăn sạch quân)
+        x_count = count_X(board)
+        if x_count == 16:
+            print_board(board)
+            print("MCTS AI (X) ĐÃ QUÉT SẠCH QUÂN O! CHIẾN THẮNG.")
+            return 1
+        elif x_count == 0:
+            print_board(board)
+            print("MY AI (O) ĐÃ QUÉT SẠCH QUÂN X! CHIẾN THẮNG.")
+            return -1
+
+    return 0
+
+if __name__ == "__main__":
+    print(main3())
 
 
 
