@@ -1,0 +1,267 @@
+# -*- coding: utf-8 -*-
+import pygame
+import time
+import sys
+
+# Import environment and AI
+from a2_260408 import init_board, act_moves, get_valid_moves, count_X, npc_move
+import my_agent
+import test_agent
+
+# --- UI CONFIGURATION ---
+BOARD_SIZE = 600
+UI_WIDTH = 300
+WIDTH = BOARD_SIZE + UI_WIDTH
+HEIGHT = 600
+MARGIN = 80
+CELL_SIZE = (BOARD_SIZE - 2 * MARGIN) // 4
+
+# Color palette
+BG_COLOR = (245, 222, 179)      # Board background
+UI_BG = (40, 44, 52)            # Control panel background (Dark mode)
+TEXT_COLOR = (255, 255, 255)
+LINE_COLOR = (139, 69, 19)
+P1_COLOR = (220, 20, 60)        # Red (Player 1)
+P2_COLOR = (30, 144, 255)       # Blue (Player -1)
+HL_START = (255, 215, 0)
+HL_END = (50, 205, 50)
+BTN_COLOR = (70, 130, 180)      # Steel blue for buttons
+BTN_HOVER = (100, 149, 237)
+
+def copy_board(board):
+    return [row[:] for row in board]
+
+def draw_board(screen, board, last_move=None):
+    # Draw the left board area
+    pygame.draw.rect(screen, BG_COLOR, (0, 0, BOARD_SIZE, HEIGHT))
+    
+    # Draw lines
+    for i in range(5):
+        pygame.draw.line(screen, LINE_COLOR, (MARGIN, MARGIN + i * CELL_SIZE), (BOARD_SIZE - MARGIN, MARGIN + i * CELL_SIZE), 3)
+        pygame.draw.line(screen, LINE_COLOR, (MARGIN + i * CELL_SIZE, MARGIN), (MARGIN + i * CELL_SIZE, HEIGHT - MARGIN), 3)
+        
+    for i in range(5):
+        for j in range(5):
+            if (i + j) % 2 == 0:
+                x, y = MARGIN + j * CELL_SIZE, MARGIN + i * CELL_SIZE
+                if i < 4 and j < 4:
+                    pygame.draw.line(screen, LINE_COLOR, (x, y), (x + CELL_SIZE, y + CELL_SIZE), 3)
+                if i > 0 and j < 4:
+                    pygame.draw.line(screen, LINE_COLOR, (x, y), (x + CELL_SIZE, y - CELL_SIZE), 3)
+
+    # Highlight the move
+    if last_move:
+        start, end = last_move
+        pygame.draw.circle(screen, HL_START, (MARGIN + start[1] * CELL_SIZE, MARGIN + start[0] * CELL_SIZE), 30, 6)
+        pygame.draw.circle(screen, HL_END, (MARGIN + end[1] * CELL_SIZE, MARGIN + end[0] * CELL_SIZE), 38, 6)
+
+    # Draw the pieces
+    for i in range(5):
+        for j in range(5):
+            x = MARGIN + j * CELL_SIZE
+            y = MARGIN + i * CELL_SIZE
+            if board[i][j] == 1:
+                pygame.draw.circle(screen, P1_COLOR, (x, y), 25)
+            elif board[i][j] == -1:
+                pygame.draw.circle(screen, P2_COLOR, (x, y), 25)
+
+# CẬP NHẬT: Thêm tham số match_ended và winner_message
+def draw_ui(screen, font, p1_name, p2_name, time1, time2, p1_pieces, p2_pieces, turn, is_paused, match_ended=False, winner_message=""):
+    # Draw right panel background
+    pygame.draw.rect(screen, UI_BG, (BOARD_SIZE, 0, UI_WIDTH, HEIGHT))
+    pygame.draw.line(screen, (200, 200, 200), (BOARD_SIZE, 0), (BOARD_SIZE, HEIGHT), 2)
+    
+    # Title
+    title = font.render("MATCH STATISTICS", True, (255, 215, 0))
+    screen.blit(title, (BOARD_SIZE + 20, 20))
+    
+    # Current turn
+    turn_text = font.render(f"Turn: {turn}", True, TEXT_COLOR)
+    screen.blit(turn_text, (BOARD_SIZE + 20, 60))
+
+    # Player 1 Info (Red)
+    pygame.draw.rect(screen, P1_COLOR, (BOARD_SIZE + 20, 100, 260, 100), border_radius=10)
+    screen.blit(font.render(f"🔴 {p1_name} (X)", True, TEXT_COLOR), (BOARD_SIZE + 30, 110))
+    screen.blit(font.render(f"Time: {time1:.2f}s", True, TEXT_COLOR), (BOARD_SIZE + 30, 140))
+    screen.blit(font.render(f"Pieces: {p1_pieces}", True, TEXT_COLOR), (BOARD_SIZE + 30, 170))
+
+    # Player 2 Info (Blue)
+    pygame.draw.rect(screen, P2_COLOR, (BOARD_SIZE + 20, 220, 260, 100), border_radius=10)
+    screen.blit(font.render(f"🔵 {p2_name} (O)", True, TEXT_COLOR), (BOARD_SIZE + 30, 230))
+    screen.blit(font.render(f"Time: {time2:.2f}s", True, TEXT_COLOR), (BOARD_SIZE + 30, 260))
+    screen.blit(font.render(f"Pieces: {p2_pieces}", True, TEXT_COLOR), (BOARD_SIZE + 30, 290))
+
+    # CẬP NHẬT: Xử lý hiển thị trạng thái và kết quả trận đấu
+    if match_ended:
+        status_text = "MATCH ENDED!"
+        status_color = (255, 50, 50)
+    else:
+        status_text = "PAUSED (REPLAY)" if is_paused else "MATCH IN PROGRESS..."
+        status_color = (255, 100, 100) if is_paused else (100, 255, 100)
+    
+    # Đẩy text status lên cao một chút (350 thay vì 360) để nhường chỗ cho winner text
+    screen.blit(font.render(status_text, True, status_color), (BOARD_SIZE + 20, 345))
+
+    # HIỂN THỊ NGƯỜI CHIẾN THẮNG
+    if match_ended and winner_message:
+        win_surf = font.render(winner_message, True, (255, 215, 0)) # Màu vàng Gold
+        screen.blit(win_surf, (BOARD_SIZE + 20, 380))
+
+def draw_buttons(screen, font, mouse_pos):
+    # Define coordinates for 3 buttons
+    btn_prev = pygame.Rect(BOARD_SIZE + 20, 420, 70, 40)
+    btn_pause = pygame.Rect(BOARD_SIZE + 105, 420, 90, 40)
+    btn_next = pygame.Rect(BOARD_SIZE + 210, 420, 70, 40)
+    
+    buttons = [(btn_prev, "< Prev"), (btn_pause, "Pause/Play"), (btn_next, "Next >")]
+    
+    for rect, text in buttons:
+        color = BTN_HOVER if rect.collidepoint(mouse_pos) else BTN_COLOR
+        pygame.draw.rect(screen, color, rect, border_radius=5)
+        text_surf = font.render(text, True, TEXT_COLOR)
+        # Center text in the button
+        text_rect = text_surf.get_rect(center=rect.center)
+        screen.blit(text_surf, text_rect)
+        
+    return btn_prev, btn_pause, btn_next
+
+def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Co Ganh - Replay Tool")
+    font = pygame.font.SysFont("Arial", 20, bold=True)
+    
+    # Initial state
+    current_player = 1
+    times = {1: 99.0, -1: 99.0}
+    mo_list = []
+    
+    # MATCH HISTORY
+    history = [{
+        "board": init_board(),
+        "move": None,
+        "time1": 99.0,
+        "time2": 99.0,
+        "turn": 0
+    }]
+    
+    view_index = 0
+    is_paused = False
+    match_ended = False
+    winner_message = "" # NEW: Biến lưu trữ thông điệp chiến thắng
+
+    running = True
+    while running:
+        mouse_pos = pygame.mouse.get_pos()
+        board_state = history[view_index]
+        board = board_state["board"]
+        
+        # Draw everything to the screen
+        draw_board(screen, board, board_state["move"])
+        x_count, o_count = count_X(board), 16 - count_X(board)
+        
+        # CẬP NHẬT: Truyền thêm match_ended và winner_message
+        draw_ui(screen, font, p1_name, p2_name, board_state["time1"], board_state["time2"], 
+                x_count, o_count, board_state["turn"], is_paused, match_ended, winner_message)
+        
+        btn_prev, btn_pause, btn_next = draw_buttons(screen, font, mouse_pos)
+        
+        pygame.display.flip()
+
+        # EVENT HANDLING (Button clicks)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if btn_prev.collidepoint(event.pos):
+                    is_paused = True # Auto-pause when rewinding
+                    view_index = max(0, view_index - 1)
+                elif btn_next.collidepoint(event.pos):
+                    is_paused = True
+                    view_index = min(len(history) - 1, view_index + 1)
+                elif btn_pause.collidepoint(event.pos):
+                    if not match_ended:
+                        is_paused = not is_paused
+                        if not is_paused:
+                            view_index = len(history) - 1
+
+        # GAME PLAYING PROCESSING
+        if not is_paused and not match_ended and view_index == len(history) - 1:
+            turn_count = len(history)
+            x_count, o_count = count_X(board), 16 - count_X(board)
+
+            # CẬP NHẬT: Điều kiện 1 - Bị ăn hết quân
+            if x_count == 0:
+                match_ended = True
+                winner_message = f"WINNER: {p2_name}!"
+                continue
+            elif o_count == 0:
+                match_ended = True
+                winner_message = f"WINNER: {p1_name}!"
+                continue
+
+            # CẬP NHẬT: Điều kiện 2 - Vượt quá 100 lượt
+            if turn_count > 100:
+                match_ended = True
+                if x_count > o_count:
+                    winner_message = f"{p1_name} WINS (Score)!"
+                elif o_count > x_count:
+                    winner_message = f"{p2_name} WINS (Score)!"
+                else:
+                    winner_message = "DRAW!"
+                continue
+
+            # CẬP NHẬT: Điều kiện 3 - Hết nước đi hợp lệ
+            valid_moves = get_valid_moves(board, current_player)
+            if not valid_moves:
+                match_ended = True
+                winner = p2_name if current_player == 1 else p1_name
+                winner_message = f"{winner} WINS (No moves)!"
+                continue
+
+            # Call the thinking function
+            start_time = time.time()
+            if current_player == 1:
+                move = agent_1_func(board, current_player, times[1]) 
+            else:
+                move = agent_2_func(board, current_player, times[-1])
+            time_taken = time.time() - start_time
+            
+            # Deduct time and check for timeout
+            times[current_player] -= time_taken
+            
+            # CẬP NHẬT: Điều kiện 4 - Hết giờ / Quá thời gian quy định cho 1 lượt
+            if times[current_player] <= 0 or time_taken > 3.2:
+                print(f"Player {current_player} timed out or ran out of time!")
+                match_ended = True
+                winner = p2_name if current_player == 1 else p1_name
+                winner_message = f"{winner} WINS (Timeout)!"
+                continue
+
+            # Execute and save history
+            new_board = copy_board(board)
+            mo_list = act_moves(move, current_player, new_board)
+            
+            history.append({
+                "board": new_board,
+                "move": move,
+                "time1": times[1],
+                "time2": times[-1],
+                "turn": turn_count
+            })
+            view_index += 1
+            current_player *= -1
+            
+            # Delay 0.5s so human eyes can catch the auto move
+            pygame.time.delay(500)
+
+    pygame.quit()
+    sys.exit()
+
+if __name__ == "__main__":
+    def random_agent_wrapper(board, player, remain_time):
+        return npc_move(board, player, []) 
+
+    print("Opening analysis interface...")
+    # Names of the two sides can be changed here
+    run_gui_match(my_agent.move, test_agent.move, p1_name="My AI", p2_name="Opponent AI")
