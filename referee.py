@@ -11,9 +11,8 @@ TIME_LIMIT_TOTAL = 99.0
 TIME_LIMIT_PER_MOVE = 3.0
 MAX_TURNS = 100  # Giới hạn số lượt tối đa
 
-def random_agent_wrapper(board, player, remain_time):
-    """Wrapper để tương thích hàm npc_move của thầy với format có remain_time"""
-    return npc_move(board, player, [])
+def random_agent_wrapper(board, player, remain_time, mo_list=None):
+    return npc_move(board, player, mo=mo_list)
 
 def run_single_match(agent_1_func, agent_2_func):
     """Chạy 1 trận đấu không giao diện và trả về kết quả thống kê"""
@@ -111,7 +110,7 @@ def run_single_match(agent_1_func, agent_2_func):
 if __name__ == "__main__":
     print(f"BẮT ĐẦU CHẠY THỬ NGHIỆM {TOTAL_MATCHES} TRẬN")
     print("-" * 80)
-    print(f"{'Trận':<6} | {'Người Thắng':<15} | {'Lượt':<6} | {'Thời gian AI (X)':<20} | {'Lý do'}")
+    print(f"{'Trận':<6} | {'Người Thắng':<15} | {'Lượt':<6} | {'Thời gian AI (X)':<20}| {'Thời gian AI (O)':<20} | {'Lý do'}")
     print("-" * 80)
     
     stats = {
@@ -124,7 +123,7 @@ if __name__ == "__main__":
     
     for i in range(1, TOTAL_MATCHES + 1):
         # AI của bạn cầm quân X (1), MCTS cầm quân O (-1)
-        winner, turns, ai_time, random_time, reason = run_single_match(my_agent.move, MCTS.move)
+        winner, turns, ai_time, random_time, reason = run_single_match(my_agent.move, random_agent_wrapper)
         
         stats["Total_turns"] += turns
         stats["Total_AI_time"] += ai_time
