@@ -233,12 +233,14 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
                 # Nếu hàm AI chỉ có 3 tham số (Như my_agent.move), bỏ qua mo_list
                 move = agent_func(board, current_player, times[current_player])
             
-            # 🛡️ LỚP BẢO HỘ TRỌNG TÀI: Ép luật Mở (Bắt buộc Gánh)
-            # Dù AI tính toán ra nước nào, nếu có luật Mở mà AI không đi đúng, GUI sẽ tự sửa.
+            # --- KIỂM TRA LUẬT MỞ (BẮT BUỘC GÁNH) ---
             if mo_list and move not in mo_list:
-                print(f"[*] HỖ TRỢ TRỌNG TÀI: {curr_name} chọn {move} vi phạm luật Mở (Bắt buộc Gánh).")
-                print(f"    -> Tự động sửa nước đi thành: {mo_list[0]}")
-                move = mo_list[0]
+                print(f"[*] VI PHẠM LUẬT: Lựa chọn {move} của {curr_name} vi phạm luật Mở (Bắt buộc Gánh).")
+                print(f"    -> Các nước đi bắt buộc hợp lệ là: {mo_list}")
+                match_ended = True
+                winner = p2_name if current_player == 1 else p1_name
+                winner_message = f"{winner} WINS (Illegal Move)!"
+                continue
 
             time_taken = time.time() - start_time
             times[current_player] -= time_taken
@@ -283,6 +285,9 @@ def run_gui_match(agent_1_func, agent_2_func, p1_name, p2_name):
     pygame.quit()
     sys.exit()
 
+def random_agent_wrapper(board, player, remain_time, mo_list=None):
+    return npc_move(board, player, mo=mo_list)
+
 if __name__ == "__main__":
     print("Opening analysis interface...")
-    run_gui_match(my_agent.move, MCTS.move, p1_name="My AI", p2_name="Opponent AI")
+    run_gui_match(my_agent.move, random_agent_wrapper, p1_name="My AI", p2_name="Opponent AI")
