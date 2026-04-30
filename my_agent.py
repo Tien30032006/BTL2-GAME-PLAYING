@@ -265,7 +265,7 @@ POSITION_WEIGHTS = [
 
 INF        = float('inf')
 MAX_DEPTH  = 12
-NODE_CHECK = 512   
+NODE_CHECK = 64    # Check timeout every 64 nodes (was 512) – prevents overshoot
 LAZY_THRESHOLD = 3 
 
 class TimeoutException(Exception):
@@ -459,13 +459,13 @@ def move(board, player, remain_time):
 
     # --- QUẢN LÝ THỜI GIAN LINH ĐỘNG ---
     if remain_time > 60:
-        time_limit = 2.8
+        time_limit = 2.0   # was 2.8
     elif remain_time > 20:
-        time_limit = 1.5
+        time_limit = 1.2   # was 1.5
     elif remain_time > 8:
-        time_limit = 0.8
+        time_limit = 0.6   # was 0.8
     else:
-        time_limit = 0.3
+        time_limit = 0.2   # was 0.3
 
     evaluate = _build_evaluator(player)
     

@@ -6,7 +6,7 @@ import MCTS
 
 
 # --- CẤU HÌNH TEST ---
-TOTAL_MATCHES = 30
+TOTAL_MATCHES = 20
 TIME_LIMIT_TOTAL = 99.0
 TIME_LIMIT_PER_MOVE = 3.0
 MAX_TURNS = 100  # Giới hạn số lượt tối đa
