@@ -1,12 +1,10 @@
 import time
 from a2_260408 import init_board, act_moves, get_valid_moves, count_X, npc_move
 import my_agent
-import test_agent
-import MCTS
 
 
 # --- CẤU HÌNH TEST ---
-TOTAL_MATCHES = 20
+TOTAL_MATCHES = 10
 TIME_LIMIT_TOTAL = 99.0
 TIME_LIMIT_PER_MOVE = 3.0
 MAX_TURNS = 100  # Giới hạn số lượt tối đa
@@ -110,7 +108,7 @@ def run_single_match(agent_1_func, agent_2_func):
 if __name__ == "__main__":
     print(f"BẮT ĐẦU CHẠY THỬ NGHIỆM {TOTAL_MATCHES} TRẬN")
     print("-" * 80)
-    print(f"{'Trận':<6} | {'Người Thắng':<15} | {'Lượt':<6} | {'Thời gian AI (X)':<20}| {'Thời gian AI (O)':<20} | {'Lý do'}")
+    print(f"{'Trận':<6} | {'Người Thắng':<15} | {'Lượt':<6} | {'Thời gian (X)':<20}| {'Thời gian (O)':<20} | {'Lý do'}")
     print("-" * 80)
     
     stats = {

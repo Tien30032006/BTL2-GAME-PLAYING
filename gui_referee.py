@@ -4,10 +4,8 @@ import time
 import sys
 
 # Import environment and AI
-import MCTS
 from a2_260408 import init_board, act_moves, get_valid_moves, count_X, npc_move
 import my_agent
-import test_agent
 
 # --- UI CONFIGURATION ---
 BOARD_SIZE = 600
